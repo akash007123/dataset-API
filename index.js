@@ -1,99 +1,130 @@
 const express = require("express");
 const app = express();
-const fs = require ("fs");
+const fs = require("fs");
+const path = require("path");
 
-// Use 'let' so we can modify the array
-let users = require("./MOCK_DATA.json");
-const PORT = 8000;
+const MOCK_DATA_FILE = path.join(__dirname, "MOCK_DATA.json");
 
-// Middleware to parse JSON body
+let users = [];
+
+function loadUsers() {
+  fs.readFile(MOCK_DATA_FILE, "utf8", (err, data) => {
+    if (err) {
+      console.error("Error reading users data file:", err);
+      return;
+    }
+    users = JSON.parse(data);
+  });
+}
+
+function saveUsers() {
+  fs.writeFile(MOCK_DATA_FILE, JSON.stringify(users, null, 2), (err) => {
+    if (err) {
+      console.error("Error writing to users data file:", err);
+    }
+  });
+}
+
+// Middleware use
 app.use(express.json());
-app.use(express.urlencoded({extended: false}));
+app.use(express.urlencoded({ extended: false }));
 
-// HTML RENDER
+app.use((req, res, next) => {
+  fs.appendFile(
+    "log.txt",
+    `\n ${Date.now()}: ${req.ip}: ${req.method}: ${req.path}`,
+    (err, data) => {
+      next();
+    }
+  );
+});
+
+loadUsers();
+
+// HTML Type
 app.get("/users", (req, res) => {
-    const html = `
+  const html = `
     <ul>
-        ${users.map(user => `<li>${user.first_name}</li>`).join("")}    
+        ${users.map((user) => `<li>${user.first_name}</li>`).join("")}    
     </ul>
     `;
-    res.send(html);
+  res.send(html);
 });
 
 // GET all users
 app.get("/api/users", (req, res) => {
-    return res.json(users);
+    res.setHeader("X-MyName", "Akash Raikwar")
+  return res.json(users);
 });
 
-// GET user by ID
+// For GET
 app.get("/api/users/:id", (req, res) => {
-    const id = Number(req.params.id);
-    const user = users.find(user => user.id === id);
+  const id = Number(req.params.id);
+  const user = users.find((user) => user.id === id);
 
-    if (!user) {
-        return res.status(404).json({ error: "User not found" });
-    }
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
 
-    return res.json(user);
+  return res.json(user);
 });
 
-// CREATE a new user
-// app.post("/api/users", (req, res) => {
-//     const newUser = {
-//         id: users.length + 1,
-//         ...req.body
-//     };
-
-//     users.push(newUser);
-
-//     return res.status(201).json({
-//         message: "User created successfully",
-//         user: newUser
-//     });
-// });
-
-
+// For CREATE
 app.post("/api/users", (req, res) => {
-    const body = req.body;
-    users.push({...body, id: users.length+1});
-    fs.writeFile('./MOCK_DATA.json', JSON.stringify(users), (err, data) => {
-        return res.json({status:"Success",  id: users.length+1});
-    })
-})
+  console.log("req", req.body);
 
-// UPDATE a user
+  const newUser = {
+    ...req.body,
+    id: users.length > 0 ? Math.max(...users.map((user) => user.id)) + 1 : 1,
+  };
+  console.log("res", newUser);
+
+  users.push(newUser);
+  saveUsers();
+
+//   Status Code
+  return res.status(201).json({
+    message: "User created successfully",
+    user: newUser,
+  });
+});
+
+// For UPDATE
 app.patch("/api/users/:id", (req, res) => {
-    const id = Number(req.params.id);
-    const updatedData = req.body;
+  const id = Number(req.params.id);
+  const updatedData = req.body;
 
-    let user = users.find(user => user.id === id);
-    if (!user) {
-        return res.status(404).json({ error: "User not found" });
-    }
+  let user = users.find((user) => user.id === id);
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
 
-    user = { ...user, ...updatedData };
-    users = users.map(u => (u.id === id ? user : u));
+  user = { ...user, ...updatedData };
+  users = users.map((u) => (u.id === id ? user : u));
+  saveUsers();
 
-    return res.json({
-        message: `User with ID ${id} updated`,
-        user
-    });
+  return res.json({
+    message: `User with ID ${id} updated`,
+    user,
+  });
 });
 
 // DELETE a user
 app.delete("/api/users/:id", (req, res) => {
-    const id = Number(req.params.id);
-    const userExists = users.some(user => user.id === id);
+  const id = Number(req.params.id);
+  const userExists = users.some((user) => user.id === id);
 
-    if (!userExists) {
-        return res.status(404).json({ error: "User not found" });
-    }
+  if (!userExists) {
+    return res.status(404).json({ error: "User not found" });
+  }
 
-    users = users.filter(user => user.id !== id);
-    return res.json({
-        message: `User with ID ${id} deleted`
-    });
+  users = users.filter((user) => user.id !== id);
+  saveUsers();
+
+  return res.json({
+    message: `User with ID ${id} deleted`,
+  });
 });
 
-// Start server
+const PORT = 8000;
 app.listen(PORT, () => console.log(`Server is started at PORT: ${PORT}`));
