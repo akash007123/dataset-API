@@ -8,7 +8,7 @@ const { logReqRes } = require('./middleware')
 
 
 // connecttion
-connectMongoDB("mongodb://localhost:27017/node-app-1").then(() => {
+connectMongoDB("mongodb+srv://akashraikwar763:Akash123Akash@databyme.eemsa63.mongodb.net/?retryWrites=true&w=majority&appName=databyme").then(() => {
   console.log("Connected to MongoDB");
 }).catch((err) => {
   console.log("Error connecting to MongoDB", err);
