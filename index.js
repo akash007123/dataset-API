@@ -6,9 +6,10 @@ const path = require("path");
 const userRouter = require('./routes/user')
 const connectMongoDB = require('./connection')
 const { logReqRes } = require('./middleware')
+require('dotenv').config()
 
 // connection
-connectMongoDB("mongodb+srv://akashraikwar763:Akash123Akash@databyme.eemsa63.mongodb.net/?retryWrites=true&w=majority&appName=databyme").then(() => {
+connectMongoDB(process.env.MONGO_URL).then(() => {
   console.log("Connected to MongoDB");
 }).catch((err) => {
   console.log("Error connecting to MongoDB", err);

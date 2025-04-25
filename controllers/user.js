@@ -5,20 +5,88 @@ const path = require('path');
 async function handleGetAllUsers(req, res) {
     try {
         console.log('Fetching all users...');
-        const allDbUsers = await User.find({});
+        const { sortBy, sortOrder, search, page = 1, limit = 5, gender, jobTitle, startDate, endDate } = req.query;
+        
+        // Build query object for search and filters
+        let query = {};
+        
+        // Search functionality
+        if (search) {
+            query.$or = [
+                { firstName: { $regex: search, $options: 'i' } },
+                { lastName: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } },
+                { jobTitle: { $regex: search, $options: 'i' } },
+                { gender: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        // Gender filter
+        if (gender) {
+            query.gender = gender;
+        }
+
+        // Job title filter
+        if (jobTitle) {
+            query.jobTitle = { $regex: jobTitle, $options: 'i' };
+        }
+
+        // Date range filter
+        if (startDate || endDate) {
+            query.createdAt = {};
+            if (startDate) {
+                query.createdAt.$gte = new Date(startDate);
+            }
+            if (endDate) {
+                query.createdAt.$lte = new Date(endDate);
+            }
+        }
+        
+        // Build sort object
+        let sortOptions = {};
+        if (sortBy) {
+            sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
+        } else {
+            // Default sort by createdAt in descending order
+            sortOptions = { createdAt: -1 };
+        }
+
+        // Calculate pagination
+        const pageNumber = parseInt(page);
+        const limitNumber = parseInt(limit);
+        const skip = (pageNumber - 1) * limitNumber;
+
+        // Get total count for pagination
+        const totalUsers = await User.countDocuments(query);
+        const totalPages = Math.ceil(totalUsers / limitNumber);
+
+        // Get paginated users
+        const allDbUsers = await User.find(query)
+            .sort(sortOptions)
+            .skip(skip)
+            .limit(limitNumber);
+        
         // Transform the image paths to include the full URL
         const usersWithImageUrls = allDbUsers.map(user => {
             const userObj = user.toObject();
             if (userObj.profileImage) {
-                // Convert backslashes to forward slashes and ensure proper path
                 const imagePath = userObj.profileImage.replace(/\\/g, '/');
                 userObj.profileImage = `http://localhost:8000/uploads/${path.basename(imagePath)}`;
                 console.log('Image URL:', userObj.profileImage);
             }
             return userObj;
         });
+
         console.log(`Found ${usersWithImageUrls.length} users`);
-        return res.json(usersWithImageUrls);
+        return res.json({
+            users: usersWithImageUrls,
+            pagination: {
+                currentPage: pageNumber,
+                totalPages,
+                totalUsers,
+                usersPerPage: limitNumber
+            }
+        });
     } catch (error) {
         console.error('Error fetching users:', error);
         return res.status(500).json({ error: "Failed to fetch users" });
