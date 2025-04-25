@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     jobTitle: String,
     gender: { type: String, required: true },
+    profileImage: { type: String }, // Store the file path or URL
   }, {timestamps: true}
 );
 

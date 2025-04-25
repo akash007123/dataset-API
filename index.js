@@ -2,12 +2,12 @@ const express = require("express");
 const app = express();
 const fs = require("fs");
 const cors = require("cors");
+const path = require("path");
 const userRouter = require('./routes/user')
 const connectMongoDB = require('./connection')
 const { logReqRes } = require('./middleware')
 
-
-// connecttion
+// connection
 connectMongoDB("mongodb+srv://akashraikwar763:Akash123Akash@databyme.eemsa63.mongodb.net/?retryWrites=true&w=majority&appName=databyme").then(() => {
   console.log("Connected to MongoDB");
 }).catch((err) => {
@@ -19,6 +19,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(logReqRes("log.txt"));
+
+// Serve static files from the uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // user Router
 app.use("/api/user", userRouter)
