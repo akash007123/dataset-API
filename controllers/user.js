@@ -2,9 +2,6 @@ const User = require('../models/user')
 const fs = require('fs').promises;
 const path = require('path');
 
-// Get base URL from environment variable or use default
-const BASE_URL = process.env.BASE_URL || 'http://localhost:8000';
-
 async function handleGetAllUsers(req, res) {
     try {
         console.log('Fetching all users...');
@@ -74,7 +71,7 @@ async function handleGetAllUsers(req, res) {
             const userObj = user.toObject();
             if (userObj.profileImage) {
                 const imagePath = userObj.profileImage.replace(/\\/g, '/');
-                userObj.profileImage = `${BASE_URL}/uploads/${path.basename(imagePath)}`;
+                userObj.profileImage = `http://localhost:8000/uploads/${path.basename(imagePath)}`;
                 console.log('Image URL:', userObj.profileImage);
             }
             return userObj;
@@ -107,7 +104,7 @@ async function handleGetUserById(req, res) {
         const userObj = user.toObject();
         if (userObj.profileImage) {
             const imagePath = userObj.profileImage.replace(/\\/g, '/');
-            userObj.profileImage = `${BASE_URL}/uploads/${path.basename(imagePath)}`;
+            userObj.profileImage = `http://localhost:8000/uploads/${path.basename(imagePath)}`;
             console.log('Image URL:', userObj.profileImage);
         }
         console.log('User found:', userObj);
@@ -149,7 +146,7 @@ async function handleUpdateUserById(req, res) {
         }
         const userObj = user.toObject();
         if (userObj.profileImage) {
-            userObj.profileImage = `${BASE_URL}/uploads/${userObj.profileImage}`;
+            userObj.profileImage = `http://localhost:8000/uploads/${userObj.profileImage}`;
             console.log('Updated image URL:', userObj.profileImage);
         }
         console.log('User updated:', userObj);
@@ -213,7 +210,7 @@ async function handleCreateNewUser(req, res) {
         const savedUser = await newUser.save();
         const userObj = savedUser.toObject();
         if (userObj.profileImage) {
-            userObj.profileImage = `${BASE_URL}/uploads/${userObj.profileImage}`;
+            userObj.profileImage = `http://localhost:8000/uploads/${userObj.profileImage}`;
             console.log('Created image URL:', userObj.profileImage);
         }
         console.log('User created:', userObj);
