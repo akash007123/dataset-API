@@ -8,10 +8,19 @@ const userSchema = new mongoose.Schema({
     jobTitle: String,
     gender: { type: String, required: true },
     profileImage: { type: String }, // Store the file path or URL
-  }, {timestamps: true}
-);
+}, {
+    timestamps: true,
+    collection: 'users' // Explicitly set collection name to avoid conflicts
+});
+
+// Ensure no username field is accidentally added
+userSchema.set('toJSON', {
+    transform: function(doc, ret) {
+        delete ret.username;
+        return ret;
+    }
+});
 
 const User = mongoose.model("User", userSchema);
-
 
 module.exports = User;

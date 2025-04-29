@@ -198,6 +198,12 @@ async function handleCreateNewUser(req, res) {
             console.log('Missing required fields');
             return res.status(400).json({ error: "Missing required fields" });
         }
+
+        // Check if user with this email already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ error: "Email already exists" });
+        }
       
         const userData = { firstName, lastName, email, jobTitle, gender };
         

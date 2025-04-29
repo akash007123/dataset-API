@@ -30,53 +30,44 @@ router.get("/users", async (req, res) => {
 // Signup route
 router.post("/signup", async (req, res) => {
   try {
-    console.log("Signup request body:", req.body);
-    const { username, password } = req.body;
-    console.log('Attempting to sign up user:', username);
-    
+    console.log("Signup request body:", req.body); // Debugging
+    const { username, password, firstName, lastName, email, gender } = req.body;
+
     // Validate input
-    if (!username || !password) {
-      console.log('Missing username or password');
-      return res.status(400).json({ message: "Username and password are required" });
+    if (!username || !password || !firstName || !lastName || !email || !gender) {
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    if (username.length < 3) {
-      console.log('Username too short:', username);
-      return res.status(400).json({ message: "Username must be at least 3 characters long" });
-    }
+    // Check if username or email already exists
+    const existingUser = await User.findOne({
+      $or: [{ username }, { email }]
+    });
 
-    if (password.length < 6) {
-      console.log('Password too short');
-      return res.status(400).json({ message: "Password must be at least 6 characters long" });
-    }
-    
-    // Check if user already exists
-    console.log('Checking for existing user:', username);
-    const existingUser = await User.findOne({ username });
     if (existingUser) {
-      console.log('Existing user found:', existingUser.username);
-      return res.status(400).json({ message: "Username already exists" });
+      if (existingUser.username === username) {
+        return res.status(400).json({ message: "Username already exists" });
+      }
+      if (existingUser.email === email) {
+        return res.status(400).json({ message: "Email already exists" });
+      }
     }
 
-    console.log('Creating new user:', username);
-    const user = new User({ username, password });
+    // Create a new user
+    const user = new User({ username, password, firstName, lastName, email, gender });
     await user.save();
-    console.log('New user created successfully:', username);
+
     res.status(201).json({ message: "New user registered successfully" });
   } catch (error) {
-    console.error('Signup error details:', error);
-    
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({ message: error.message });
-    }
-    
+    console.error("Signup error details:", error);
+
     if (error.code === 11000) {
-      return res.status(400).json({ message: "Username already exists" });
+      return res.status(400).json({ message: "Username or email already exists" });
     }
-    
+
     res.status(500).json({ message: "Internal server error", details: error.message });
   }
 });
+
 
 // Login route
 router.post("/login", async (req, res) => {

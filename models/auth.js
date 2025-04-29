@@ -1,37 +1,30 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 
-const userSchema = new mongoose.Schema({
-  username: {
-    type: String,
-    required: [true, "Username is required"],
-    unique: true,
-    trim: true,
-    minlength: [3, "Username must be at least 3 characters long"],
-    maxlength: [30, "Username cannot exceed 30 characters"]
-  },
-  password: {
-    type: String,
-    required: [true, "Password is required"],
-    minlength: [6, "Password must be at least 6 characters long"]
-  }
+const authSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true, trim: true },
+  password: { type: String, required: true },
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
+  email: { type: String, required: true, unique: true, trim: true },
+  gender: { type: String, required: true },
 });
 
-// Hash password before saving
-userSchema.pre("save", async function(next) {
+// Password hash middleware
+authSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
     next();
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    next(err);
   }
 });
 
-// Method to compare password
-userSchema.methods.comparePassword = async function(candidatePassword) {
+// Compare password method
+authSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-module.exports = mongoose.models.User || mongoose.model("User", userSchema);
+module.exports = mongoose.model("Auth", authSchema);
